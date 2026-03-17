@@ -2,7 +2,16 @@
 **/dist
 
 .sisyphus
+opencode.json
+.claude.json
+
+.DS_Store
+*.log
 
 **/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/.coverage
 
 **/.venv
