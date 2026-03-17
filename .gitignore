@@ -3,6 +3,6 @@
 
 .sisyphus
 
-opencode.json
-
 **/__pycache__
+
+**/.venv

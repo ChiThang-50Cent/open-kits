@@ -5,9 +5,7 @@ Hybrid web search helper that combines DDGS and SearXNG, exposed in two ways:
 - as an OpenCode custom tool via `ddgs-search.ts`
 - as a Claude Code MCP server via `server.py`
 
-The project keeps one shared Python search engine in `ddgs-search.py` and lets each host provide its own Python interpreter path.
-
-Installation is path-based. Keep all runtime-specific paths in local host config, not in this repository.
+The shared search engine lives in `ddgs-search.py`. Runtime-specific paths belong in local host config, not in this repository.
 
 ## Requirements
 
@@ -15,60 +13,49 @@ Installation is path-based. Keep all runtime-specific paths in local host config
 - `pip`
 - Optional: Bun or a compatible OpenCode runtime for `ddgs-search.ts`
 
-Install Python dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-If you are using this directory from a larger repo, install with the full subdirectory path instead:
-
-```bash
-pip install -r /absolute/path/to/repo/ddgs-search/requirements.txt
-```
-
 ## Files
 
 - `ddgs-search.py`: core hybrid DDGS + SearXNG search script
-- `ddgs-search.ts`: OpenCode tool wrapper
+- `ddgs-search.ts`: OpenCode tool definition
 - `server.py`: Claude Code MCP server wrapper
 - `requirements.txt`: Python dependencies
 
 ## Human Manual
 
-## Path Layouts
+## OpenCode Global Install
 
-This project can be used in either of these layouts.
+OpenCode global custom tools live under `~/.config/opencode/tools/`.
 
-### Standalone repo
+Recommended layout:
 
-If you clone this project as its own repo:
+```text
+~/.config/opencode/tools/ddgs-search/
+  ddgs-search.ts
+  ddgs-search.py
+  requirements.txt
+```
 
-- repo root: `/absolute/path/to/ddgs-search`
-- MCP server: `/absolute/path/to/ddgs-search/server.py`
-- Python search script: `/absolute/path/to/ddgs-search/ddgs-search.py`
-- requirements: `/absolute/path/to/ddgs-search/requirements.txt`
+### 1. Copy or clone this directory
 
-### Monorepo or subdirectory
+Example target path:
 
-If you clone a larger repo and this project lives under `ddgs-search/`:
+```text
+~/.config/opencode/tools/ddgs-search/
+```
 
-- repo root: `/absolute/path/to/repo`
-- MCP server: `/absolute/path/to/repo/ddgs-search/server.py`
-- Python search script: `/absolute/path/to/repo/ddgs-search/ddgs-search.py`
-- requirements: `/absolute/path/to/repo/ddgs-search/requirements.txt`
+### 2. Install Python dependencies
 
-If you pulled `opencode-kits`, your real paths will look like:
+```bash
+python3 -m pip install -r ~/.config/opencode/tools/ddgs-search/requirements.txt
+```
 
-- `/absolute/path/to/opencode-kits/ddgs-search/server.py`
-- `/absolute/path/to/opencode-kits/ddgs-search/ddgs-search.py`
-- `/absolute/path/to/opencode-kits/ddgs-search/requirements.txt`
+If you use a virtualenv, install into that environment instead.
 
-### OpenCode setup
+### 3. Configure Python for the tool
 
-Set the Python interpreter in your OpenCode config with `env`.
+Set `DDGS_PYTHON_PATH` in your global OpenCode config.
 
-Example `opencode.json`:
+Example `~/.config/opencode/opencode.json`:
 
 ```json
 {
@@ -82,41 +69,71 @@ Example `opencode.json`:
 Recommended values for `DDGS_PYTHON_PATH`:
 
 - a virtualenv Python such as `/absolute/path/to/venv/bin/python`
-- or `python3` if `ddgs` is installed globally and already on `PATH`
+- or `python3` if dependencies are already installed globally
 
-Then register or load `ddgs-search.ts` from its actual location in the repo you cloned.
-
-Examples:
-
-- standalone repo: `/absolute/path/to/ddgs-search/ddgs-search.ts`
-- monorepo: `/absolute/path/to/repo/ddgs-search/ddgs-search.ts`
-
-The OpenCode tool wrapper in `ddgs-search.ts` reads:
+`ddgs-search.ts` reads:
 
 - `DDGS_PYTHON_PATH`, then falls back to `python3`
 
-### Claude Code MCP setup
+### 4. Verify
 
-Set the Python interpreter directly in `.mcp.json`. Claude Code uses that interpreter to start `server.py`, and `server.py` then reuses the same Python by default.
+OpenCode should discover the tool from `~/.config/opencode/tools/` automatically. Verify with `/tools`.
 
-Example `.mcp.json`:
+You can also verify the Python side directly:
+
+```bash
+python /absolute/path/to/ddgs-search.py --query "OpenCode" --max-results 3
+```
+
+## Claude Code Global Install
+
+Claude Code global MCP config lives in `~/.claude.json`.
+
+### 1. Keep this project in a stable path
+
+Example:
+
+```text
+~/tools/ddgs-search/
+```
+
+or if this project stays inside a larger repo:
+
+```text
+~/tools/opencode-kits/ddgs-search/
+```
+
+### 2. Install Python dependencies
+
+```bash
+python3 -m pip install -r /absolute/path/to/ddgs-search/requirements.txt
+```
+
+### 3. Register the MCP server globally
+
+Example `~/.claude.json`:
 
 ```json
 {
   "mcpServers": {
     "ddgs-search": {
+      "type": "stdio",
       "command": "/absolute/path/to/python",
-      "args": ["/absolute/path/to/repo/ddgs-search/server.py"]
+      "args": ["/absolute/path/to/ddgs-search/server.py"]
     }
   }
 }
 ```
 
-If this is a standalone repo, replace that path with:
+If this project is inside `opencode-kits`, the `args` path will look like:
 
 ```text
-/absolute/path/to/ddgs-search/server.py
+/absolute/path/to/opencode-kits/ddgs-search/server.py
 ```
+
+Claude Code starts `server.py` with that Python, and `server.py` reuses the same interpreter by default.
+
+### 4. Optional overrides
 
 Optional environment variables for `server.py`:
 
@@ -128,25 +145,45 @@ Defaults:
 - `server.py` uses `ddgs-search.py` in the same directory
 - `server.py` uses its current Python interpreter unless overridden
 
+## Project Install
+
+Use project install only when you want the integration scoped to one repository.
+
+- OpenCode project tools live under `.opencode/tools/`
+- Claude Code project MCP config lives in `.mcp.json`
+
+Example Claude Code project config:
+
+```json
+{
+  "mcpServers": {
+    "ddgs-search": {
+      "type": "stdio",
+      "command": "/absolute/path/to/python",
+      "args": ["/absolute/path/to/repo/ddgs-search/server.py"]
+    }
+  }
+}
+```
+
 ## AI Agent Install
 
-Use this section when asking another coding agent to wire the tool into a machine or repository.
+Before installing, ask the user which scope they want:
 
-Follow this order, similar to plugin-style install docs:
+- `global` (recommended): install once for the whole machine
+- `project`: install only for the current repository
 
-1. Detect the repo root that was cloned or pulled.
-2. Determine whether `ddgs-search` is the repo root or a subdirectory inside a larger repo.
-3. Build absolute paths from that root.
-4. Put those paths in host-specific config only.
-5. Do not rewrite source files with machine-local paths.
+If the user does not care, recommend `global`.
 
 ### For OpenCode agents
 
-1. Detect the absolute path to `ddgs-search/`.
-2. Install dependencies from that directory's `requirements.txt` into a usable Python environment.
-3. Set `DDGS_PYTHON_PATH` in OpenCode config.
-4. Register or place `ddgs-search.ts` from that same directory where OpenCode loads custom tools.
-5. Verify the tool can execute `ddgs-search.py` and return JSON.
+1. Ask whether the user wants `global` or `project` install. Recommend `global`.
+2. For `global`, put the tool under `~/.config/opencode/tools/ddgs-search/`.
+3. For `project`, put the tool under `.opencode/tools/ddgs-search/` in the target repo.
+4. Install dependencies from that location's `requirements.txt`.
+5. Set `DDGS_PYTHON_PATH` in the matching OpenCode config scope.
+6. Verify OpenCode discovers the tool automatically.
+7. Do not hardcode machine-local paths into source files.
 
 Suggested config snippet:
 
@@ -161,11 +198,13 @@ Suggested config snippet:
 
 ### For Claude Code agents
 
-1. Detect the absolute path to `ddgs-search/server.py` from the cloned repo root.
-2. Install dependencies from that directory's `requirements.txt` into a usable Python environment.
-3. Add an MCP server entry pointing to that Python.
-4. Pass the absolute path to `server.py` in `args`.
-5. Verify the MCP server exposes the `ddgs_search` tool and returns parsed JSON.
+1. Ask whether the user wants `global` or `project` install. Recommend `global`.
+2. Keep the repo in a stable absolute path.
+3. Install dependencies from that directory's `requirements.txt`.
+4. For `global`, add the MCP server to `~/.claude.json`.
+5. For `project`, add the MCP server to `.mcp.json`.
+6. Pass the absolute path to `server.py` in `args`.
+7. Do not hardcode machine-local paths into source files.
 
 Suggested config snippet:
 
@@ -173,27 +212,17 @@ Suggested config snippet:
 {
   "mcpServers": {
     "ddgs-search": {
+      "type": "stdio",
       "command": "/absolute/path/to/python",
-      "args": ["/absolute/path/to/repo/ddgs-search/server.py"]
+      "args": ["/absolute/path/to/ddgs-search/server.py"]
     }
   }
 }
 ```
 
-Verification examples for agents:
-
-```bash
-python /absolute/path/to/repo/ddgs-search/ddgs-search.py --query "OpenCode" --max-results 3
-```
-
-or for standalone layout:
-
-```bash
-python /absolute/path/to/ddgs-search/ddgs-search.py --query "Claude Code" --max-results 3
-```
-
 ## Notes
 
-- Do not hardcode machine-specific Python paths in source files.
-- OpenCode and Claude Code each provide Python from their own config layer.
-- This repository is safe to publish because runtime-specific paths stay in local config, not in git.
+- OpenCode global custom tools are discovered from `~/.config/opencode/tools/`.
+- Claude Code global MCP servers are configured in `~/.claude.json`.
+- Keep machine-specific paths in local config, not in git.
+- This repository can be published safely because runtime paths stay outside source control.
