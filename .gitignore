@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+
+.sisyphus
+
+opencode.json
+
+**/__pycache__
