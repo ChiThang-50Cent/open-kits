@@ -19,6 +19,8 @@ The shared search engine lives in `ddgs-search.py`. Runtime-specific paths belon
 - `ddgs-search.ts`: OpenCode tool definition
 - `server.py`: Claude Code MCP server wrapper
 - `requirements.txt`: Python dependencies
+- `ddgs-search.claude.md`: Claude Code subagent definition
+- `opencode-skill/SKILL.md`: OpenCode skill definition
 
 ## Human Manual
 
@@ -144,6 +146,50 @@ Defaults:
 
 - `server.py` uses `ddgs-search.py` in the same directory
 - `server.py` uses its current Python interpreter unless overridden
+
+## Claude Code Subagent Install
+
+The ddgs-search subagent provides a focused web research agent that only has access to the ddgs-search tool.
+
+### Global Install
+
+```bash
+cp ddgs-search/ddgs-search.claude.md ~/.claude/agents/ddgs-search.md
+```
+
+Restart Claude Code or use `/agents` to load the new subagent.
+
+### Project Install
+
+```bash
+mkdir -p .claude/agents
+cp ddgs-search/ddgs-search.claude.md .claude/agents/ddgs-search.md
+```
+
+### Usage
+
+Once installed, Claude will automatically delegate web research tasks to the ddgs-search subagent. You can also explicitly invoke it:
+
+```text
+Use the ddgs-search agent to research [topic]
+```
+
+## OpenCode Skill Install
+
+The ddgs-search skill provides on-demand web search capabilities.
+
+### Global Install
+
+```bash
+mkdir -p ~/.config/opencode/skills
+cp -r ddgs-search/opencode-skill ~/.config/opencode/skills/ddgs-search
+```
+
+OpenCode will automatically discover the skill. Verify with `/skills`.
+
+### Usage
+
+Once installed, the skill is available for on-demand loading. OpenCode agents can invoke the skill when web search is needed.
 
 ## Project Install
 
